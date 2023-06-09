@@ -149,7 +149,7 @@ Public Class Window
                 end_pos = 0
                 prev_endpos = 0
                 Try
-                    Dim m As Match = Regex.Match(msg, "(Rack|System)[^\n]*", RegexOptions.None)
+                    Dim m As Match = Regex.Match(msg, "(Rack|System|HVAC)[^\n]*", RegexOptions.None)
                     end_pos = m.Index + m.Length
                     rack_name = m.Value
                 Catch ex As Exception
