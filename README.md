@@ -21,7 +21,9 @@ TEST002=TestStore2
 TEST003=TestStore3
 ```
 6. Setup Danfoss controllers to email alarms to the mailbox defined in the ini file.  **(It is recommended that you set up a unique network connection in the controller to avoid any conflicts with other alarm monitoring.)**  Actions can be modified to your needs.  The important part is the *Stop* & *Send alarms when cleared* settings.
-	Here is an example for an AK-SM880.  The configuration for the other tested controllers is similar.
+
+	Here is an example for an AK-SM880.  The configuration for the other tested controllers is similar:
+	
 	![AK-SM880 Sample](img/Danfoss1.png "AK-SM880 Sample")
 7. Run *AlarmMonitor.exe* to begin monitoring for alarms.
 
