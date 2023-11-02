@@ -196,6 +196,9 @@ Public Class Window
                     ElseIf msg.Substring(prev_endpos, msg.Length - prev_endpos).Contains("when") Then
                         Dim m As Match = Regex.Match(msg.Substring(prev_endpos, msg.Length - prev_endpos), "when (Off|On)", RegexOptions.None)
                         alarm_value = m.Groups(1).Value
+                    ElseIf msg.Substring(prev_endpos, msg.Length - prev_endpos).Contains("%") Then
+                        Dim m As Match = Regex.Match(msg.Substring(prev_endpos, msg.Length - prev_endpos), "at (([^%]*)%)", RegexOptions.None)
+                        alarm_value = m.Groups(1).Value
                     Else
                         Dim m As Match = Regex.Match(msg.Substring(prev_endpos, msg.Length - prev_endpos), "at (([^F]*)F)", RegexOptions.None)
                         alarm_value = m.Groups(1).Value
