@@ -48,6 +48,9 @@ Public Class Window
         itemcol(1) = errorMessage
         Dim lvi As New ListViewItem(itemcol)
         lstErrors.Items.Add(lvi)
+
+        lstErrors.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent)
+        lstErrors.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize)
     End Sub
 
     'Private Function dbReconnect()

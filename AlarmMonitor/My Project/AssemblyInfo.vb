@@ -12,7 +12,7 @@ Imports System.Runtime.InteropServices
 <Assembly: AssemblyDescription("")>
 <Assembly: AssemblyCompany("")>
 <Assembly: AssemblyProduct("AlarmMonitor")>
-<Assembly: AssemblyCopyright("Copyright © William Moser  2022 - 2023")>
+<Assembly: AssemblyCopyright("Copyright © William Moser  2022 - 2026")>
 <Assembly: AssemblyTrademark("")>
 
 <Assembly: ComVisible(False)>
