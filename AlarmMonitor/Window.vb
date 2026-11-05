@@ -12,6 +12,7 @@ Public Class Window
     Public error_state As Boolean
     Public testMode, useSSL As Boolean
     Public emailHost, emailPort, emailUser, emailPass As String
+    Private isProcessing As Boolean = False
     Private Function dbConnect()
         'Connect to database
         MysqlConn = New MySqlConnection()
@@ -32,11 +33,14 @@ Public Class Window
         'Disconnect from the database
         lblDBStatus.Text = "Disconnecting..."
         Try
-            MysqlConn.Close()
+            If MysqlConn IsNot Nothing Then
+                If MysqlConn.State = ConnectionState.Open Then
+                    MysqlConn.Close()
+                End If
+                MysqlConn.Dispose()
+            End If
             lblDBStatus.Text = "Disconnected"
-            MysqlConn.Dispose()
         Catch ex As MySqlException
-            'MessageBox.Show("Cannot disconnect from database: " & ex.Message)
             WriteToEventLog(ex.Message)
         End Try
         Return Nothing
@@ -52,14 +56,6 @@ Public Class Window
         lstErrors.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent)
         lstErrors.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize)
     End Sub
-
-    'Private Function dbReconnect()
-    '    'Close the database and start reconnect timer
-    '    dbClose()
-    '    ReconnectTimer.Start()
-    '    lblDBStatus.Text = "Waiting 10 seconds to reconnect..."
-    '    Return Nothing
-    'End Function
 
     Public Function WriteToEventLog(ByVal Entry As String)
         'Write to system event log
@@ -219,7 +215,6 @@ Public Class Window
                 Catch ex As Exception
                     alarm_cleared = False
                 End Try
-                'MsgBox(rack_name.Trim + vbCrLf + alarm_type.Trim + vbCrLf + alarm_unit.Trim + vbCrLf + alarm_time_string.Trim + vbCrLf + alarm_value.Trim + vbCrLf + alarm_cleared.ToString)
                 dbInsert(store, rack_name.Trim, alarm_type.Trim, alarm_unit.Trim, alarm_time_string.Trim, alarm_value.Trim, alarm_cleared)
             Next
 
@@ -231,29 +226,41 @@ Public Class Window
             alarm_unit = alarm_unit.Replace("'", "")
         End If
         Try
-            Dim dt As DataSet = loadSQL("SELECT `alarm_id` FROM `alarms` WHERE store = '" + store + "' AND alarm_unit = '" + alarm_unit + "' AND alarm_cleared = 0")
+            Dim dt As DataSet
+            Using chkCmd As New MySqlCommand("SELECT `alarm_id` FROM `alarms` WHERE store = @store AND alarm_unit = @unit AND alarm_cleared = 0", MysqlConn)
+                chkCmd.Parameters.Add("@store", MySqlDbType.VarChar).Value = store
+                chkCmd.Parameters.Add("@unit", MySqlDbType.VarChar).Value = alarm_unit
+                Using adapter As New MySqlDataAdapter(chkCmd)
+                    dt = New DataSet()
+                    adapter.Fill(dt)
+                End Using
+            End Using
+
             If dt.Tables(0).Rows.Count = 0 Then
-                Dim command As New MySqlCommand
-                command.Connection = MysqlConn
-                command.CommandText = "INSERT INTO alarms(store, rack_name, alarm_type, alarm_unit, alarm_time, alarm_value, alarm_cleared, alarm_ack) VALUES(@store, @rack, @type, @unit, @time, @value, @cleared, @cleared)"
-                command.Parameters.Add("@store", MySqlDbType.TinyText).Value = store
-                command.Parameters.Add("@rack", MySqlDbType.TinyText).Value = rack_name
-                command.Parameters.Add("@type", MySqlDbType.TinyText).Value = alarm_type
-                command.Parameters.Add("@unit", MySqlDbType.TinyText).Value = alarm_unit
-                command.Parameters.Add("@time", MySqlDbType.DateTime).Value = DateTime.Parse(alarm_time_string)
-                command.Parameters.Add("@value", MySqlDbType.TinyText).Value = alarm_value
-                command.Parameters.Add("@cleared", MySqlDbType.Int16).Value = Convert.ToInt32(alarm_cleared)
-                command.ExecuteNonQuery()
+                Using command As New MySqlCommand
+                    command.Connection = MysqlConn
+                    command.CommandText = "INSERT INTO alarms(store, rack_name, alarm_type, alarm_unit, alarm_time, alarm_value, alarm_cleared, alarm_ack) VALUES(@store, @rack, @type, @unit, @time, @value, @cleared, @cleared)"
+                    command.Parameters.Add("@store", MySqlDbType.TinyText).Value = store
+                    command.Parameters.Add("@rack", MySqlDbType.TinyText).Value = rack_name
+                    command.Parameters.Add("@type", MySqlDbType.TinyText).Value = alarm_type
+                    command.Parameters.Add("@unit", MySqlDbType.TinyText).Value = alarm_unit
+                    command.Parameters.Add("@time", MySqlDbType.DateTime).Value = DateTime.Parse(alarm_time_string)
+                    command.Parameters.Add("@value", MySqlDbType.TinyText).Value = alarm_value
+                    command.Parameters.Add("@cleared", MySqlDbType.Int16).Value = Convert.ToInt32(alarm_cleared)
+                    command.ExecuteNonQuery()
+                End Using
 
                 'Check if input is already in database, if not, add it
                 storeInput(alarm_unit, store)
             ElseIf dt.Tables(0).Rows.Count = 1 Then
                 If alarm_cleared Then
-                    Dim command As New MySqlCommand
-                    command.Connection = MysqlConn
-                    command.CommandText = "UPDATE `alarms` SET alarm_cleared = 1 WHERE store = '" + store + "' AND alarm_unit = '" + alarm_unit + "'"
-
-                    command.ExecuteNonQuery()
+                    Using command As New MySqlCommand()
+                        command.Connection = MysqlConn
+                        command.CommandText = "UPDATE `alarms` SET alarm_cleared = 1 WHERE store = @store AND alarm_unit = @unit"
+                        command.Parameters.Add("@store", MySqlDbType.VarChar).Value = store
+                        command.Parameters.Add("@unit", MySqlDbType.VarChar).Value = alarm_unit
+                        command.ExecuteNonQuery()
+                    End Using
                 End If
             End If
         Catch ex As Exception
@@ -261,22 +268,31 @@ Public Class Window
             error_state = True
         End Try
 
-        If Not error_state Then
-            deleteMessages()
-        End If
-        error_state = False
+        'If Not error_state Then
+        '    deleteMessages()
+        'End If
+        'error_state = False
     End Sub
 
     Private Sub storeInput(ByVal inputName As String, ByVal storeName As String)
         Try
-            Dim dt As DataSet = loadSQL("SELECT alarm_input_id FROM alarm_inputs WHERE input_name = '" + inputName + "' AND input_store = '" + storeName + "'")
+            Dim dt As DataSet
+            Using chkCmd As New MySqlCommand("SELECT alarm_input_id FROM alarm_inputs WHERE input_name = @input AND input_store = @store", MysqlConn)
+                chkCmd.Parameters.Add("@input", MySqlDbType.VarChar).Value = inputName
+                chkCmd.Parameters.Add("@store", MySqlDbType.VarChar).Value = storeName
+                Using adapter As New MySqlDataAdapter(chkCmd)
+                    dt = New DataSet()
+                    adapter.Fill(dt)
+                End Using
+            End Using
             If dt.Tables(0).Rows.Count = 0 Then
-                Dim command As New MySqlCommand
-                command.Connection = MysqlConn
-                command.CommandText = "INSERT INTO alarm_inputs(input_name, input_store) VALUES(@input, @store)"
-                command.Parameters.Add("@input", MySqlDbType.VarString).Value = inputName
-                command.Parameters.Add("@store", MySqlDbType.VarString).Value = storeName
-                command.ExecuteNonQuery()
+                Using command As New MySqlCommand()
+                    command.Connection = MysqlConn
+                    command.CommandText = "INSERT INTO alarm_inputs(input_name, input_store) VALUES(@input, @store)"
+                    command.Parameters.Add("@input", MySqlDbType.VarString).Value = inputName
+                    command.Parameters.Add("@store", MySqlDbType.VarString).Value = storeName
+                    command.ExecuteNonQuery()
+                End Using
             End If
         Catch ex As Exception
             WriteToEventLog(ex.Message)
@@ -343,12 +359,13 @@ Public Class Window
 
     Private Function loadSQL(ByVal query As String)
         'Load SQL query into dataset
-        Dim command As New MySqlCommand(query, MysqlConn)
-        Dim adapter As New MySqlDataAdapter(command)
-        Dim dt As New DataSet
-
-        adapter.Fill(dt)
-        Return dt
+        Using command As New MySqlCommand(query, MysqlConn)
+            Using adapter As New MySqlDataAdapter(command)
+                Dim dt As New DataSet
+                adapter.Fill(dt)
+                Return dt
+            End Using
+        End Using
     End Function
 
     Private Sub processTimer_Tick(sender As Object, e As EventArgs) Handles processTimer.Tick
@@ -356,32 +373,43 @@ Public Class Window
     End Sub
 
     Private Sub timerAction()
-        If Not testMode Then
-            If MysqlConn.State = ConnectionState.Open Then
-                Try
-                    Dim messageList As List(Of Message)
-                    messageList = getMessages()
-                    For Each pmessage As Message In messageList
-                        parseMessage(pmessage)
-                    Next
-                    lblLastProcess.Text = "Last Processed: " + DateAndTime.Now.ToString
-                    getCurrentAlarms()
-                Catch ex As Exception
-                    WriteToEventLog(ex.Message)
-                End Try
+        If isProcessing Then Exit Sub
+        isProcessing = True
 
+        Try
+            If Not testMode Then
+                If MysqlConn.State = ConnectionState.Open Then
+                    Try
+                        Dim messageList As List(Of Message) = getMessages()
+                        For Each pmessage As Message In messageList
+                            parseMessage(pmessage)
+                        Next
+
+                        If messageList.Count > 0 AndAlso Not error_state Then
+                            deleteMessages()
+                        End If
+
+                        lblLastProcess.Text = "Last Processed: " + DateAndTime.Now.ToString
+                        getCurrentAlarms()
+                    Catch ex As Exception
+                        WriteToEventLog(ex.Message)
+                    End Try
+
+                Else
+                    Try
+                        dbClose()
+                        dbConnect()
+                    Catch ex As Exception
+                        WriteToEventLog(ex.Message)
+                    End Try
+                End If
             Else
-                Try
-                    dbClose()
-                    dbConnect()
-                Catch ex As Exception
-                    WriteToEventLog(ex.Message)
-                End Try
+                getCurrentAlarms()
             End If
-        Else
-            getCurrentAlarms()
-        End If
-
+        Finally
+            error_state = False
+            isProcessing = False
+        End Try
     End Sub
 
     Private Sub getCurrentAlarms()
@@ -392,7 +420,7 @@ Public Class Window
             lblCurAlarms.Text = "Current Alarms: " + dt.Tables(0).Rows.Count.ToString
 
             For z = 0 To dt.Tables(0).Rows.Count - 1
-                Dim itemcol(100) As String
+                Dim itemcol(7) As String
                 For y = 0 To 6
                     If y = 6 Then
                         If dt.Tables(0).Rows(z)(y).ToString = "True" Then
