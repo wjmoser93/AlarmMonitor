@@ -27,9 +27,9 @@ Partial Class Window
         Me.btnProcess = New System.Windows.Forms.Button()
         Me.StatusStrip1 = New System.Windows.Forms.StatusStrip()
         Me.lblDBStatus = New System.Windows.Forms.ToolStripStatusLabel()
-        Me.processTimer = New System.Windows.Forms.Timer(Me.components)
-        Me.lblLastProcess = New System.Windows.Forms.ToolStripStatusLabel()
         Me.lblCurAlarms = New System.Windows.Forms.ToolStripStatusLabel()
+        Me.lblLastProcess = New System.Windows.Forms.ToolStripStatusLabel()
+        Me.processTimer = New System.Windows.Forms.Timer(Me.components)
         Me.lstCurAlarms = New System.Windows.Forms.ListView()
         Me.Store = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.Rack = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
@@ -41,6 +41,9 @@ Partial Class Window
         Me.lstErrors = New System.Windows.Forms.ListView()
         Me.Time = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.ErrorC = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.lstTestAlarms = New System.Windows.Forms.ListView()
+        Me.TestStore = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.TestTime = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.StatusStrip1.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -69,10 +72,12 @@ Partial Class Window
         Me.lblDBStatus.Size = New System.Drawing.Size(200, 17)
         Me.lblDBStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
         '
-        'processTimer
+        'lblCurAlarms
         '
-        Me.processTimer.Enabled = True
-        Me.processTimer.Interval = 60000
+        Me.lblCurAlarms.AutoSize = False
+        Me.lblCurAlarms.Name = "lblCurAlarms"
+        Me.lblCurAlarms.Size = New System.Drawing.Size(200, 17)
+        Me.lblCurAlarms.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
         '
         'lblLastProcess
         '
@@ -81,12 +86,10 @@ Partial Class Window
         Me.lblLastProcess.Size = New System.Drawing.Size(340, 17)
         Me.lblLastProcess.TextAlign = System.Drawing.ContentAlignment.MiddleRight
         '
-        'lblCurAlarms
+        'processTimer
         '
-        Me.lblCurAlarms.AutoSize = False
-        Me.lblCurAlarms.Name = "lblCurAlarms"
-        Me.lblCurAlarms.Size = New System.Drawing.Size(200, 17)
-        Me.lblCurAlarms.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
+        Me.processTimer.Enabled = True
+        Me.processTimer.Interval = 60000
         '
         'lstCurAlarms
         '
@@ -135,7 +138,7 @@ Partial Class Window
         Me.lstErrors.HideSelection = False
         Me.lstErrors.Location = New System.Drawing.Point(12, 227)
         Me.lstErrors.Name = "lstErrors"
-        Me.lstErrors.Size = New System.Drawing.Size(776, 169)
+        Me.lstErrors.Size = New System.Drawing.Size(499, 169)
         Me.lstErrors.TabIndex = 3
         Me.lstErrors.UseCompatibleStateImageBehavior = False
         Me.lstErrors.View = System.Windows.Forms.View.Details
@@ -148,11 +151,33 @@ Partial Class Window
         '
         Me.ErrorC.Text = "Error"
         '
+        'lstTestAlarms
+        '
+        Me.lstTestAlarms.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.TestStore, Me.TestTime})
+        Me.lstTestAlarms.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable
+        Me.lstTestAlarms.HideSelection = False
+        Me.lstTestAlarms.Location = New System.Drawing.Point(517, 227)
+        Me.lstTestAlarms.Name = "lstTestAlarms"
+        Me.lstTestAlarms.Size = New System.Drawing.Size(271, 169)
+        Me.lstTestAlarms.TabIndex = 4
+        Me.lstTestAlarms.UseCompatibleStateImageBehavior = False
+        Me.lstTestAlarms.View = System.Windows.Forms.View.Details
+        '
+        'TestStore
+        '
+        Me.TestStore.Text = "Store"
+        '
+        'TestTime
+        '
+        Me.TestTime.Text = "Last Test Alarm"
+        Me.TestTime.Width = 88
+        '
         'Window
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(800, 450)
+        Me.Controls.Add(Me.lstTestAlarms)
         Me.Controls.Add(Me.lstErrors)
         Me.Controls.Add(Me.lstCurAlarms)
         Me.Controls.Add(Me.StatusStrip1)
@@ -187,4 +212,7 @@ Partial Class Window
     Friend WithEvents lstErrors As ListView
     Friend WithEvents Time As ColumnHeader
     Friend WithEvents ErrorC As ColumnHeader
+    Friend WithEvents lstTestAlarms As ListView
+    Friend WithEvents TestStore As ColumnHeader
+    Friend WithEvents TestTime As ColumnHeader
 End Class

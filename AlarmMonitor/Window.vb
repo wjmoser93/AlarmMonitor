@@ -391,6 +391,7 @@ Public Class Window
 
                         lblLastProcess.Text = "Last Processed: " + DateAndTime.Now.ToString
                         getCurrentAlarms()
+                        getLastTestAlarms()
                     Catch ex As Exception
                         WriteToEventLog(ex.Message)
                     End Try
@@ -405,6 +406,7 @@ Public Class Window
                 End If
             Else
                 getCurrentAlarms()
+                getLastTestAlarms()
             End If
         Finally
             error_state = False
@@ -437,6 +439,45 @@ Public Class Window
             Next
             lstCurAlarms.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent)
             lstCurAlarms.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize)
+        End If
+    End Sub
+
+    ' Queries the last test alarm records from the database and populates the test alarms list view
+    Private Sub getLastTestAlarms()
+        If MysqlConn.State = ConnectionState.Open Then
+            lstTestAlarms.Items.Clear()
+
+            Dim dt As DataSet = loadSQL("SELECT `store`, `last_alarm_time` FROM `alarm_last_test`")
+
+            For z = 0 To dt.Tables(0).Rows.Count - 1
+                Dim itemcol(1) As String
+
+                itemcol(0) = dt.Tables(0).Rows(z)("store").ToString()
+
+                Dim alarmTime As DateTime
+                Dim isOlderThan26Hours As Boolean = False
+
+                If DateTime.TryParse(dt.Tables(0).Rows(z)("last_alarm_time").ToString(), alarmTime) Then
+                    itemcol(1) = alarmTime.ToString("MM/dd/yyyy h:mm:ss tt", System.Globalization.CultureInfo.InvariantCulture)
+
+                    If (DateTime.Now - alarmTime).TotalHours > 26 Then
+                        isOlderThan26Hours = True
+                    End If
+                Else
+                    itemcol(1) = dt.Tables(0).Rows(z)("last_alarm_time").ToString()
+                End If
+
+                Dim lvi As New ListViewItem(itemcol)
+
+                If isOlderThan26Hours Then
+                    lvi.ForeColor = Color.Red
+                End If
+
+                lstTestAlarms.Items.Add(lvi)
+            Next
+
+            lstTestAlarms.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent)
+            lstTestAlarms.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize)
         End If
     End Sub
 End Class
